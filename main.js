@@ -1,25 +1,39 @@
 import * as THREE from 'three';
+import { ShaderTuber } from './components/shader';
 
+// Visualization setup
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize( window.innerWidth, window.innerHeight );
-document.body.appendChild( renderer.domElement );
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-const cube = new THREE.Mesh( geometry, material );
-scene.add( cube );
+// renderer options
+renderer.setPixelRatio(Math.min(Math.max(1, window.devicePixelRatio), 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputEncoding = THREE.sRGBEncoding;
+
+// lighting
+const ambientLight = new THREE.AmbientLight()
+const pointLight = new THREE.PointLight()
+pointLight.position.set(10, 10, 10)
+scene.add(ambientLight)
+scene.add(pointLight)
+
+// init shadertuber
+const audioContext = new AudioContext();
+const shaderTuber = new ShaderTuber(audioContext);
+scene.add(shaderTuber);
 
 camera.position.z = 5;
 
 function animate() {
-	requestAnimationFrame( animate );
-
-  cube.rotation.x += 0.01;
-  cube.rotation.y += 0.01;
-
-	renderer.render( scene, camera );
+  requestAnimationFrame(animate);
+  shaderTuber.render();
+  renderer.render(scene, camera);
 }
+
 animate();
