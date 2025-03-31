@@ -14,6 +14,8 @@ document.body.appendChild(renderer.domElement);
 // renderer options
 renderer.setPixelRatio(Math.min(Math.max(1, window.devicePixelRatio), 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+//@ts-ignore: dw this works, renderer encoding options not available in @types/three
 renderer.outputEncoding = THREE.sRGBEncoding;
 
 // lighting

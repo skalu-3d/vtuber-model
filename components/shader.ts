@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 
 export class ShaderTuber extends THREE.Mesh {
-  constructor(audioContext) {
+  private audioContext: AudioContext;
+
+  constructor(audioContext: AudioContext) {
     super();
     this.audioContext = audioContext;
     this.geometry = new THREE.BoxGeometry(1, 1, 1);
