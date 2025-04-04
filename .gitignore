@@ -132,3 +132,4 @@ dist
 ### USER DEFINED
 # mediapipe tasks
 *.task
+components/wasm/*

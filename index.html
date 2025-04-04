@@ -8,7 +8,13 @@
 		</style>
 	</head>
 	<body>
-		<video width="480" height="360" id="videoElement"></video>
+		<div style="position: relative">
+			<video style="position: absolute; left: 0px; top:0px;" width="480" height="360" id="videoElement"></video>
+			<canvas style="position: absolute; left: 0px; top: 0px;" id="outputCanvas"></canvas>
+		</div>
+		<div style="position: relative;">
+			<ul id="videoBlendShapes"></ul>
+		</div>
 		<script type="module" src="/main.ts"></script>
 	</body>
 </html>
