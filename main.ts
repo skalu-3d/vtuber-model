@@ -1,10 +1,12 @@
 import { renderScene } from "./components/scene";
-import { startWebcam } from "./components/landmarking";
+import { startWebcam, createFaceLandmarker, predictWebcam } from "./components/landmarking";
 
 // renderScene();
 console.log("running");
 try {
-    startWebcam();
+    await startWebcam();
+    const faceLandmarker = await createFaceLandmarker();
+    renderScene(faceLandmarker);
 } catch (e) {
     console.error(e)
 }
