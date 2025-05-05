@@ -2,21 +2,31 @@ import * as THREE from 'three';
 import { ShaderTuber } from './shader';
 import { FaceLandmarker } from '@mediapipe/tasks-vision';
 
-//@ts-ignore import texture from local dir
-import imgUrl from './textures/texture.gif';
+// @ts-ignore
+import px from '../components/textures/envmap/px.png'
+// @ts-ignore
+import nx from '../components/textures/envmap/nx.png'
+// @ts-ignore
+import py from '../components/textures/envmap/py.png'
+// @ts-ignore
+import ny from '../components/textures/envmap/ny.png'
+// @ts-ignore
+import pz from '../components/textures/envmap/pz.png'
+// @ts-ignore
+import nz from '../components/textures/envmap/nz.png'
 
 export function renderScene(faceLandmarker: FaceLandmarker) {
     // Visualization setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.z = 2;
 
+    // renderer options
     const renderer = new THREE.WebGLRenderer({
     antialias: true,
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-
-    // renderer options
     renderer.setPixelRatio(Math.min(Math.max(1, window.devicePixelRatio), 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
@@ -25,27 +35,29 @@ export function renderScene(faceLandmarker: FaceLandmarker) {
 
     // lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 1)
-    // const pointLight = new THREE.PointLight(0xffffff, 2)
-    // pointLight.position.set(7, 9, 10)
-    // pointLight.castShadow = true;
     ambientLight.castShadow = true;
     scene.add(ambientLight)
-    // scene.add(pointLight)
+
     const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
+    // environment
+    const textureLoader = new THREE.CubeTextureLoader();
+    const bgTexture = textureLoader.load([
+        px, nx, py, ny, pz, nz
+    ]);
+    scene.background = bgTexture;
+
     // init shadertuber
     const audioContext = new AudioContext();
-    const shaderTuber = new ShaderTuber(audioContext, faceLandmarker);
+    const shaderTuber = new ShaderTuber(audioContext, faceLandmarker, bgTexture);
     scene.add(shaderTuber);
-
-    camera.position.z = 2;
-
 
     const animate = () => {
         requestAnimationFrame(animate);
         shaderTuber.render();
+        shaderTuber.material.uniforms.time.value = performance.now() / 1000;
         renderer.render(scene, camera);
     }
 

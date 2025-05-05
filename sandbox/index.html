@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Shadertuber</title>
+		<style>
+			body { margin: 0; }
+		</style>
+		<link rel="icon" type="image/png" href="../components/textures/texture.png">
+	</head>
+	<body>
+		<div style="position: relative">
+			<video style="position: absolute; left: 0px; top:0px;" width="480" height="360" id="videoElement"></video>
+			<canvas style="position: absolute; left: 0px; top: 0px;" id="outputCanvas"></canvas>
+		</div>
+		<div style="position: relative;">
+			<ul id="videoBlendShapes"></ul>
+		</div>
+		<script type="module" src="./sandbox.ts"></script>
+	</body>
+</html>

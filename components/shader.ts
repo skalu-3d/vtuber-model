@@ -5,29 +5,41 @@ import * as THREE from 'three';
 //@ts-ignore import texture from local dir
 import imgUrl from './textures/texture.gif';
 
+// @ts-ignore
+import vertexShader from '../components/shaders/vertex.glsl'
+// @ts-ignore
+import fragmentShader from '../components/shaders/fragment.glsl'
+
 export class ShaderTuber extends THREE.Mesh {
   private audioContext: AudioContext;
   private faceLandmarker: FaceLandmarker;
+  material: THREE.ShaderMaterial;
 
-  constructor(audioContext: AudioContext, faceLandmarker: FaceLandmarker) {
+  constructor(audioContext: AudioContext, faceLandmarker: FaceLandmarker, envMap: THREE.Texture) {
     super();
     this.audioContext = audioContext;
     this.faceLandmarker = faceLandmarker;
 
-    const textureLoader = new THREE.TextureLoader();
-    const texture = textureLoader.load(imgUrl);
-
-    this.geometry = new THREE.BoxGeometry(10, 10, 10);
-    this.material = new THREE.MeshStandardMaterial({
-      // color: new THREE.Color('cyan').convertSRGBToLinear(),
-      // roughness: 0.2,
-      // metalness: 0.7,
-      map: texture
-      // wireframe: true
+    this.geometry = new THREE.IcosahedronGeometry(16, 16);
+    this.material = new THREE.ShaderMaterial({
+        uniforms: {
+            time: { value: 0 },
+            waveSpeed: { value: 0.2 },
+            waveScale: { value: 0.1 },
+            distortionScale: { value: 3 },
+            envMap: { value: envMap },
+            opacity: { value: 1.0 },
+            reflectivity: { value: 0.1 },
+            refractiveIndex: { value: 1.0 },
+            baseColor: { value: [0.0, 1.0, 0.0] },
+            baseColorIntensity: { value: 1.0 }
+        },
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        transparent: true,
+        side: THREE.DoubleSide
     });
 
-    // console.log(this.material)
-    
     this.castShadow = true;
     this.receiveShadow = true;
   }
@@ -43,13 +55,7 @@ export class ShaderTuber extends THREE.Mesh {
     const euler = new THREE.Euler(rotation.x*1.5, rotation.y*1.5, rotation.z*1.5, "ZYX");
     const quaternion = new THREE.Quaternion().setFromEuler(euler);
 
-    // quaternion.x *= -1;    
-    // quaternion.y *= -1;    
-    // quaternion.z *= -1;    
-
     this.quaternion.slerp(quaternion, 1.0);
-    // this.rotation.x = this.rotation.y += 0.01
-
 
     this.position.set(
       translation.x,
