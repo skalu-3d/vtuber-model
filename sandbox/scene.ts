@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OrbitControls, RoomEnvironment } from 'three/examples/jsm/Addons.js';
+import { GLTFLoader, OrbitControls, RoomEnvironment } from 'three/examples/jsm/Addons.js';
 
 // @ts-ignore
 import vertexShader from '../components/shaders/vertex.glsl'
@@ -17,12 +17,14 @@ import ny from '../components/textures/envmap/ny.png'
 import pz from '../components/textures/envmap/pz.png'
 // @ts-ignore
 import nz from '../components/textures/envmap/nz.png'
+// @ts-ignore
+import tvUrl from '../components/3d/scene.glb'
 
 export function renderScene() {
     // Visualization setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.z = 5;
+    camera.position.z = 1;
 
     // renderer options
     const renderer = new THREE.WebGLRenderer({
@@ -60,6 +62,37 @@ export function renderScene() {
     directionalLight.castShadow = true;
     scene.add(directionalLight);
 
+    let model: THREE.Object3D;
+
+    const loader = new GLTFLoader();
+    loader.load(
+        tvUrl,
+        function (gltf) {
+            console.log(gltf);
+
+            gltf.scene.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+
+                if (child.name === "CRT_Monitor") {
+                    model = child;
+                    model.scale.set(5,5,5);
+                    model.position.setX(0);
+                    model.position.setY(32);
+                    model.position.setZ(0);
+                }
+            })
+
+            scene.add(gltf.scene);
+        },
+        undefined,
+        function (error) {
+            console.error(error);
+        }
+    );
+
     // init obj
     const geometry = new THREE.IcosahedronGeometry(2, 10);
     const material = new THREE.ShaderMaterial({
@@ -83,14 +116,14 @@ export function renderScene() {
     material.transparent = true;
     // material.wireframe = true;
     const cube = new THREE.Mesh( geometry, material );
-    scene.add(cube);
+    // scene.add(cube);
 
 
     const animate = () => {
         requestAnimationFrame(animate);
         controls.update();
         material.uniforms.time.value = performance.now() / 1000;
-        // cube.rotation.x = cube.rotation.y += 0.01;
+        model.rotation.x = model.rotation.y += 0.01;
         renderer.render(scene, camera);
     }
 

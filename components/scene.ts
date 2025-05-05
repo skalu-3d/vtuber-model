@@ -15,7 +15,7 @@ import pz from '../components/textures/envmap/pz.png'
 // @ts-ignore
 import nz from '../components/textures/envmap/nz.png'
 
-export function renderScene(faceLandmarker: FaceLandmarker) {
+export async function renderScene(faceLandmarker: FaceLandmarker) {
     // Visualization setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -52,12 +52,12 @@ export function renderScene(faceLandmarker: FaceLandmarker) {
     // init shadertuber
     const audioContext = new AudioContext();
     const shaderTuber = new ShaderTuber(audioContext, faceLandmarker, bgTexture);
-    scene.add(shaderTuber);
+    await shaderTuber.loadModel();
+    scene.add(shaderTuber.getBaseModel());
 
     const animate = () => {
         requestAnimationFrame(animate);
         shaderTuber.render();
-        shaderTuber.material.uniforms.time.value = performance.now() / 1000;
         renderer.render(scene, camera);
     }
 
