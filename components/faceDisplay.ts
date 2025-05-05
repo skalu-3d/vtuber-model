@@ -1,14 +1,17 @@
 import * as THREE from 'three';
 
 //@ts-ignore
-import dvdUrl from './textures/texture.png'
+import imgUrl from './textures/texture_lcd.png'
+//@ts-ignore
+import bgUrl from './textures/lcd_bg.png'
 
-export class DVDCanvas extends THREE.CanvasTexture {
+export class DisplayCanvas extends THREE.CanvasTexture {
     private pos_x = 50;
     private pos_y = 50;
-    private dx = 10;
-    private dy = 10;
+    private dx = 3;
+    private dy = 3;
     private img: HTMLImageElement;
+    private bgImg: HTMLImageElement;
     private width;
     private height;
     private canvasElement;
@@ -26,16 +29,21 @@ export class DVDCanvas extends THREE.CanvasTexture {
         }
 
         const imageLoader = new THREE.ImageLoader();
-        imageLoader.load(dvdUrl,
+        imageLoader.load(imgUrl,
             (img) => {
-                let scale = 0.05;
-                // img.width *= scale;
-                // img.height *= scale;
-                this.width = img.width;
-                this.height = img.height;
+                this.width = 64;
+                this.height = 64;
                 this.img = img;
-                console.log('loaded dvd logo')
                 console.log(this.img);
+            },
+            undefined,
+            (error) => {
+                console.error(error);
+            }
+        )
+        imageLoader.load(bgUrl,
+            (img) => {
+                this.bgImg = img;
             },
             undefined,
             (error) => {
@@ -71,7 +79,9 @@ export class DVDCanvas extends THREE.CanvasTexture {
     draw() {
         if (this.img) {
             this.ctx.reset();
-            this.ctx.drawImage(this.img, this.pos_x, this.pos_y);
+            this.ctx.drawImage(this.bgImg, 0, 0, this.bgImg.width, this.bgImg.height);
+            this.ctx.fillStyle = "drop-shadow(5px 5px 5px rgb(65, 253, 81))"
+            this.ctx.drawImage(this.img, this.pos_x, this.pos_y, this.height, this.width);
         }
     }
 

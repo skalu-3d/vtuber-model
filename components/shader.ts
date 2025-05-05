@@ -14,7 +14,7 @@ import fragmentShader from './shaders/fragment.glsl'
 // CRT Model by fizyman at Sketchfab: https://skfb.ly/o9BvF
 // CC 4.0 https://creativecommons.org/licenses/by/4.0/
 import tvUrl from './3d/scene.glb'
-import { DVDCanvas } from './tvDisplay';
+import { DisplayCanvas } from './faceDisplay';
 // @ts-ignore
 // import dvdUrl from './textures/dvd.gif'
 
@@ -23,7 +23,7 @@ export class ShaderTuber {
   private faceLandmarker: FaceLandmarker;
   private baseModel: THREE.Object3D;
   private monitorSurface: THREE.Mesh;
-  private onScreen: DVDCanvas;
+  private onScreen: DisplayCanvas;
 
   constructor(audioContext: AudioContext, faceLandmarker: FaceLandmarker, envMap: THREE.Texture) {
     this.audioContext = audioContext;
@@ -31,13 +31,14 @@ export class ShaderTuber {
   }
 
   async loadModel() {
+    // https://fab.com/s/14e3b9546fc4
     const loader = new GLTFLoader();
     const gltf = await loader.loadAsync(tvUrl, undefined);
     gltf.scene.traverse((child) => {
-      if (child.name === "CRT_Monitor") {
+      if (child.name === "RootNode") {
         this.baseModel = child;
       }
-      if (child.name === "CRT_Monitor_monitor_glass_0") {
+      if (child.name === "Plane_Material001_0") {
         if (child instanceof THREE.Mesh) {
           this.monitorSurface = child as THREE.Mesh;
           this.applyScreenContent(this.monitorSurface);
@@ -49,36 +50,16 @@ export class ShaderTuber {
   }
 
   private applyScreenContent(screen:THREE.Mesh) {
-    const textureLoader = new THREE.TextureLoader();
-    console.log(screen);
-    // textureLoader.load(imgUrl,
-    //   (texture) => {
-    //     const material = screen.material;
-    //     if (
-    //       material instanceof THREE.MeshBasicMaterial 
-    //       || material instanceof THREE.MeshStandardMaterial
-    //     ) {
-    //       texture.rotation = Math.PI/2;
-
-    //       texture.wrapS = THREE.RepeatWrapping
-    //       texture.wrapT = THREE.RepeatWrapping
-
-    //       material.map = texture;
-    //       material.map.needsUpdate = true;
-    //     }
-    //   }
-    // );
     const canvas = document.createElement('canvas');
-    canvas.width = 861;
-    canvas.height = 641;
-    const dvdCanvas = new DVDCanvas(canvas);
+    canvas.width = 249;
+    canvas.height = 312;
+    const dvdCanvas = new DisplayCanvas(canvas);
     dvdCanvas.render();
     const material = screen.material;
     if (
       material instanceof THREE.MeshBasicMaterial 
       || material instanceof THREE.MeshStandardMaterial
     ) {
-      dvdCanvas.rotation = Math.PI/2;
       dvdCanvas.wrapS = THREE.RepeatWrapping
       dvdCanvas.wrapT = THREE.RepeatWrapping
       
@@ -105,12 +86,6 @@ export class ShaderTuber {
     const euler = new THREE.Euler(rotation.x*1.5, rotation.y*1.5, rotation.z*1.5, "ZYX");
     const quaternion = new THREE.Quaternion().setFromEuler(euler);
 
-    // Rotate Y axis by 90 degrees
-    const axis = new THREE.Vector3(1,0,0);
-    const angle = -(Math.PI / 2);
-    const rotationQuaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
-    quaternion.multiply(rotationQuaternion);
-
     this.baseModel.quaternion.slerp(quaternion, 1);
 
     this.baseModel.position.set(
@@ -118,7 +93,7 @@ export class ShaderTuber {
       translation.y,
       translation.z
     );
-    this.baseModel.scale.set(scale.x*5, scale.y*5, scale.z*5);
+    this.baseModel.scale.set(scale.x*0.1, scale.y*0.1, scale.z*0.1);
 
     if (this.onScreen) { 
       this.onScreen.render() 
@@ -144,4 +119,40 @@ function decomposeMatrix(matrix: number[]): {
     rotation: rotation,
     scale: scale,
   };
+}
+
+class UVNormalizer {
+  private minU: number;
+  private minV: number;
+  private scaleU: number;
+  private scaleV: number;
+
+  constructor(geometry: THREE.BufferGeometry) {
+    const bounds = this.calculateUVBounds(geometry);
+    this.minU = bounds.minU;
+    this.minV = bounds.minV;
+    this.scaleU = 1 / (bounds.maxU - bounds.minU);
+    this.scaleV = 1 / (bounds.maxV - bounds.minV);
+  }
+
+  applyToTexture(texture: THREE.Texture) {
+    texture.repeat.set(this.scaleU, this.scaleV);
+    texture.offset.set(-this.minU * this.scaleU, -this.minV * this.scaleV);
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+  }
+
+  private calculateUVBounds(geometry: THREE.BufferGeometry) {
+    // Implementation similar to UV Remapping example
+    const uvAttr = geometry.attributes.uv;
+    const uvArray = uvAttr.array as Float32Array;
+
+    // Find current UV bounds
+    let minU = Infinity, maxU = -Infinity;
+    let minV = Infinity, maxV = -Infinity;
+    
+    return {
+      minU, maxU, minV, maxV
+    };
+  }
 }
