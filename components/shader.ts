@@ -14,14 +14,16 @@ import fragmentShader from './shaders/fragment.glsl'
 // CRT Model by fizyman at Sketchfab: https://skfb.ly/o9BvF
 // CC 4.0 https://creativecommons.org/licenses/by/4.0/
 import tvUrl from './3d/scene.glb'
+import { DVDCanvas } from './tvDisplay';
 // @ts-ignore
-import dvdUrl from './textures/dvd.gif'
+// import dvdUrl from './textures/dvd.gif'
 
 export class ShaderTuber {
   private audioContext: AudioContext;
   private faceLandmarker: FaceLandmarker;
   private baseModel: THREE.Object3D;
   private monitorSurface: THREE.Mesh;
+  private onScreen: DVDCanvas;
 
   constructor(audioContext: AudioContext, faceLandmarker: FaceLandmarker, envMap: THREE.Texture) {
     this.audioContext = audioContext;
@@ -49,38 +51,41 @@ export class ShaderTuber {
   private applyScreenContent(screen:THREE.Mesh) {
     const textureLoader = new THREE.TextureLoader();
     console.log(screen);
-    textureLoader.load(dvdUrl,
-      (texture) => {
-        const material = screen.material;
-        if (
-          material instanceof THREE.MeshBasicMaterial 
-          || material instanceof THREE.MeshStandardMaterial
-        ) {
-          texture.rotation = Math.PI/2;
+    // textureLoader.load(imgUrl,
+    //   (texture) => {
+    //     const material = screen.material;
+    //     if (
+    //       material instanceof THREE.MeshBasicMaterial 
+    //       || material instanceof THREE.MeshStandardMaterial
+    //     ) {
+    //       texture.rotation = Math.PI/2;
 
-          texture.wrapS = THREE.RepeatWrapping
-          texture.wrapT = THREE.RepeatWrapping
+    //       texture.wrapS = THREE.RepeatWrapping
+    //       texture.wrapT = THREE.RepeatWrapping
 
-          // const offsetX = 771 / 1024;
-          // const offsetY = 404 / 1024;
-
-          // texture.offset.x = aspect > 1 ? (1 - 1 / aspect) / 2 : 0;
-          // texture.repeat.x = aspect > 1 ? 1 / aspect : 1;
-
-          // texture.offset.y = aspect > 1 ? 0 : (1 - aspect) / 2;
-          // texture.repeat.y = aspect > 1 ? 1 : aspect;
-          
-          // const normalizer = new UVNormalizer(screen.geometry);
-          // normalizer.applyToTexture(texture);
-
-          // texture.offset.set(-offsetX, -offsetY);
-
-
-          material.map = texture;
-          material.map.needsUpdate = true;
-        }
-      }
-    );
+    //       material.map = texture;
+    //       material.map.needsUpdate = true;
+    //     }
+    //   }
+    // );
+    const canvas = document.createElement('canvas');
+    canvas.width = 861;
+    canvas.height = 641;
+    const dvdCanvas = new DVDCanvas(canvas);
+    dvdCanvas.render();
+    const material = screen.material;
+    if (
+      material instanceof THREE.MeshBasicMaterial 
+      || material instanceof THREE.MeshStandardMaterial
+    ) {
+      dvdCanvas.rotation = Math.PI/2;
+      dvdCanvas.wrapS = THREE.RepeatWrapping
+      dvdCanvas.wrapT = THREE.RepeatWrapping
+      
+      material.side = THREE.DoubleSide;
+      material.map = dvdCanvas;
+      this.onScreen = dvdCanvas;
+    }
   }
 
   public getBaseModel() {
@@ -114,6 +119,10 @@ export class ShaderTuber {
       translation.z
     );
     this.baseModel.scale.set(scale.x*5, scale.y*5, scale.z*5);
+
+    if (this.onScreen) { 
+      this.onScreen.render() 
+    }
   }
 }
 
@@ -135,40 +144,4 @@ function decomposeMatrix(matrix: number[]): {
     rotation: rotation,
     scale: scale,
   };
-}
-
-class UVNormalizer {
-  private minU: number;
-  private minV: number;
-  private scaleU: number;
-  private scaleV: number;
-
-  constructor(geometry: THREE.BufferGeometry) {
-    const bounds = this.calculateUVBounds(geometry);
-    this.minU = bounds.minU;
-    this.minV = bounds.minV;
-    this.scaleU = 1 / (bounds.maxU - bounds.minU);
-    this.scaleV = 1 / (bounds.maxV - bounds.minV);
-  }
-
-  applyToTexture(texture: THREE.Texture) {
-    texture.repeat.set(this.scaleU, this.scaleV);
-    texture.offset.set(-this.minU * this.scaleU, -this.minV * this.scaleV);
-    texture.wrapS = THREE.ClampToEdgeWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-  }
-
-  private calculateUVBounds(geometry: THREE.BufferGeometry) {
-    // Implementation similar to UV Remapping example
-    const uvAttr = geometry.attributes.uv;
-    const uvArray = uvAttr.array as Float32Array;
-
-    // Find current UV bounds
-    let minU = Infinity, maxU = -Infinity;
-    let minV = Infinity, maxV = -Infinity;
-    
-    return {
-      minU, maxU, minV, maxV
-    };
-  }
 }
