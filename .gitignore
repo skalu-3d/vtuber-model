@@ -133,3 +133,4 @@ dist
 # mediapipe tasks
 *.task
 components/wasm/*
+components/3d/scene.glb

@@ -6,10 +6,11 @@ import imgUrl from './textures/texture_lcd.png'
 import bgUrl from './textures/lcd_bg.png'
 
 export class DisplayCanvas extends THREE.CanvasTexture {
-    private pos_x = 50;
-    private pos_y = 50;
-    private dx = 3;
-    private dy = 3;
+    private pos_x = 10;
+    private pos_y = 10;
+    private dx = 2;
+    private dy = 2;
+    private gridSize = 8;
     private img: HTMLImageElement;
     private bgImg: HTMLImageElement;
     private width;
@@ -79,9 +80,9 @@ export class DisplayCanvas extends THREE.CanvasTexture {
     draw() {
         if (this.img) {
             this.ctx.reset();
-            this.ctx.drawImage(this.bgImg, 0, 0, this.bgImg.width, this.bgImg.height);
-            this.ctx.fillStyle = "drop-shadow(5px 5px 5px rgb(65, 253, 81))"
-            this.ctx.drawImage(this.img, this.pos_x, this.pos_y, this.height, this.width);
+            this.ctx.drawImage(this.bgImg, 0, 0, this.canvasElement.width, this.canvasElement.height);
+            this.ctx.filter="drop-shadow(3px 3px 1px rgb(58, 66, 58)) brightness(75%)";
+            this.ctx.drawImage(this.img, this.pos_x, this.pos_y, this.width, this.height);
         }
     }
 
