@@ -5,12 +5,11 @@ import imgUrl from './textures/texture_lcd.png'
 //@ts-ignore
 import bgUrl from './textures/lcd_bg.png'
 
-export class DisplayCanvas extends THREE.CanvasTexture {
+export class FaceDisplayCanvas extends THREE.CanvasTexture {
     private pos_x = 10;
     private pos_y = 10;
     private dx = 2;
     private dy = 2;
-    private gridSize = 8;
     private img: HTMLImageElement;
     private bgImg: HTMLImageElement;
     private width;

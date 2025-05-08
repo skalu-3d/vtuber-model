@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ShaderTuber } from './shader';
+import { ShaderTuber } from './model';
 import { FaceLandmarker } from '@mediapipe/tasks-vision';
 
 // @ts-ignore
