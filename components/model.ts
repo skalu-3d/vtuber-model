@@ -49,19 +49,19 @@ export class ShaderTuber {
     const canvas = document.createElement('canvas');
     canvas.width = 249;
     canvas.height = 312;
-    const dvdCanvas = new FaceDisplayCanvas(canvas);
-    dvdCanvas.render();
+    const displayCanvas = new FaceDisplayCanvas(canvas);
+    // dvdCanvas.render();
     const material = screen.material;
     if (
       material instanceof THREE.MeshBasicMaterial 
       || material instanceof THREE.MeshStandardMaterial
     ) {
-      dvdCanvas.wrapS = THREE.RepeatWrapping
-      dvdCanvas.wrapT = THREE.RepeatWrapping
+      displayCanvas.wrapS = THREE.RepeatWrapping
+      displayCanvas.wrapT = THREE.RepeatWrapping
       
       material.side = THREE.DoubleSide;
-      material.map = dvdCanvas;
-      this.onScreen = dvdCanvas;
+      material.map = displayCanvas;
+      this.onScreen = displayCanvas;
     }
   }
 
@@ -82,17 +82,12 @@ export class ShaderTuber {
     const euler = new THREE.Euler(rotation.x*1.5, rotation.y*1.5, rotation.z*1.5, "ZYX");
     const quaternion = new THREE.Quaternion().setFromEuler(euler);
 
-    this.baseModel.quaternion.slerp(quaternion, 1);
-
-    this.baseModel.position.set(
-      translation.x,
-      translation.y,
-      translation.z
-    );
-    this.baseModel.scale.set(scale.x*0.1, scale.y*0.1, scale.z*0.1);
+    this.baseModel.quaternion.slerp(quaternion, 0.5);
+    this.baseModel.position.lerp(translation, 0.5)
+    this.baseModel.scale.lerp(scale.multiplyScalar(0.1), 0.3);
 
     if (this.onScreen) { 
-      this.onScreen.render() 
+      this.onScreen.render(landmarkerResults); 
     }
   }
 }
