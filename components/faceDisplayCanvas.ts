@@ -11,10 +11,10 @@ import { drawBlendShapes } from './landmarking';
 class FacialFeature {
     public name: string;
     public img: HTMLImageElement;
-    public pos_x: number;
-    public pos_y: number;
+    public pos: THREE.Vector2;
     public height: number;
     public width: number;
+    private visible = true;
 
     constructor(
         img: HTMLImageElement,
@@ -24,14 +24,17 @@ class FacialFeature {
         height: number
     ) {
         this.img = img;
-        this.pos_x = pos_x;
-        this.pos_y = pos_y;
+        this.pos = new THREE.Vector2(pos_x, pos_y);
         this.width = width;
         this.height = height;
     }
 
+    setVisibility(val: boolean) {
+        this.visible = val;
+    }
+
     drawOnCanvas(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
-        ctx.drawImage(this.img, this.pos_x, this.pos_y, this.width, this.height);
+        if (this.visible) ctx.drawImage(this.img, this.pos.x, this.pos.y, this.width, this.height);
     }
 }
 
@@ -40,9 +43,14 @@ export class FaceDisplayCanvas extends THREE.CanvasTexture {
     private bgImg: HTMLImageElement;
     private canvasElement: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
-    private facialFeatures: Map<string, FacialFeature>; 
-    private leftEye: FacialFeature;
-    private rightEye: FacialFeature;
+    private facialFeatures: Map<string, FacialFeature>;
+    private mouth: FacialFeature | undefined;
+    private mouthShut: true;
+    private glasses: FacialFeature | undefined;
+    private leftEye: FacialFeature | undefined;
+    private rightEye: FacialFeature | undefined;
+    private leftBrow: FacialFeature | undefined;
+    private rightBrow: FacialFeature | undefined;
 
     constructor (canvas: HTMLCanvasElement) {
         super(canvas);
@@ -70,7 +78,7 @@ export class FaceDisplayCanvas extends THREE.CanvasTexture {
         SPRITE_URLS.forEach((url, spriteName) => {
             imageLoader.load(url, (img) => {   
                 const newFeature = new FacialFeature(
-                    img, 0, 0, img.width*2, img.height*2
+                    img, 0, 0, img.width, img.height
                 );
                 this.facialFeatures.set(spriteName, newFeature);
                 // console.log(newFeature);
@@ -81,7 +89,9 @@ export class FaceDisplayCanvas extends THREE.CanvasTexture {
             })
         });
 
+
         console.log(this.facialFeatures);
+        document.addEventListener("keydown", this.onKeyDown, false);
     }
 
     blendshapeDraw(landmarkerResults: FaceLandmarkerResult) {
@@ -92,45 +102,78 @@ export class FaceDisplayCanvas extends THREE.CanvasTexture {
         
 
         drawBlendShapes(landmarkerResults.faceBlendshapes);
-        let mouth = this.facialFeatures.get('mouthDefault');
+        // let mouth = this.facialFeatures.get('mouthx1y0');
         let mouthShut = true;
-        let glasses = this.facialFeatures.get('glassesDefault');
-        let leftEye = this.facialFeatures.get('leftEyeDefault');
-        let rightEye = this.facialFeatures.get('rightEyeDefault');
+        let jawOpenScore = 0;
+        let mouthPuckerScore = 0;
+        this.leftEye = this.facialFeatures.get('leftEyeDefault');
+        this.rightEye = this.facialFeatures.get('rightEyeDefault');
+        this.glasses = this.facialFeatures.get('glassesDefault');
+        this.leftBrow = this.facialFeatures.get('browLeft');
+        this.rightBrow = this.facialFeatures.get('browRight');
+        let lookIn = 0;
+        let lookOut = 0;
+        let lookUp = 0;
+        let lookDown = 0;
 
         landmarkerResults.faceBlendshapes[0].categories.map((shape) => {
+            // NOTE: movement via lerp
+            // TODO: mouth side to side movement
+            // TODO: pupil movement
+
             switch (shape.index) {
                 case BLENDSHAPES.jawOpen:
-                    switch (true) {
-                        case shape.score < 0.1:
-                            mouth = this.facialFeatures.get('mouthDefault');
-                            break;
-                        case shape.score < 0.6:
-                            mouth = this.facialFeatures.get('mouthOpen');
-                            mouthShut = false;
-                            break;
-                        default:
-                            mouth = this.facialFeatures.get('mouthOpenWide');
-                            mouthShut = false;
-                            break;
-                    }
+                    jawOpenScore = shape.score;
                     break;
-                case BLENDSHAPES.mouthSmileRight:
-                    if (mouthShut && shape.score > 0.5) {
-                        mouth = this.facialFeatures.get('mouthSmiling');
-                        glasses = this.facialFeatures.get('glassesSmiling');
-                    }
+                case BLENDSHAPES.mouthPucker:
+                    mouthPuckerScore = shape.score;
                     break;
                 case BLENDSHAPES.eyeBlinkLeft:
-                    if (shape.score > 0.4) {
-                        leftEye = this.facialFeatures.get('leftEyeShut');
+                    if (shape.score > 0.3) {
+                        this.leftEye = this.facialFeatures.get('leftEyeShut');
                     }
                     break;
                 case BLENDSHAPES.eyeBlinkRight:
-                    if (shape.score > 0.4) {
-                        rightEye = this.facialFeatures.get('rightEyeShut');
+                    if (shape.score > 0.3) {
+                        this.rightEye = this.facialFeatures.get('rightEyeShut');
                     }
                     break;
+                case BLENDSHAPES.eyeWideLeft:
+                    if (shape.score > 0.25) {
+                        this.leftEye = this.facialFeatures.get('leftEyeWide');
+                    } break;
+                case BLENDSHAPES.eyeWideRight:
+                    if (shape.score > 0.25) {
+                        this.rightEye= this.facialFeatures.get('rightEyeWide');
+                    } break;
+                case BLENDSHAPES.eyeLookOutLeft:
+                    lookOut = shape.score; break;
+                case BLENDSHAPES.eyeLookInLeft:
+                    lookIn = shape.score; break;
+                case BLENDSHAPES.eyeLookUpLeft:
+                    lookUp = shape.score; break;
+                case BLENDSHAPES.eyeLookDownLeft:
+                    lookDown = shape.score; break;
+                case BLENDSHAPES.browOuterUpLeft:
+                    this.leftBrow?.setVisibility(true);
+                    if (shape.score < 0.1) {
+                        this.leftBrow?.pos.lerp(new THREE.Vector2(0, 16), 0.3);
+                    } else if (shape.score > 0.6) {
+                        this.leftBrow?.pos.lerp(new THREE.Vector2(0, -48), 0.3);
+                    } else {
+                        this.leftBrow?.pos.set(0, 0);
+                        this.leftBrow?.setVisibility(false);
+                    } break;
+                case BLENDSHAPES.browOuterUpRight:
+                    this.rightBrow?.setVisibility(true);
+                    if (shape.score < 0.1) {
+                        this.rightBrow?.pos.lerp(new THREE.Vector2(0, 16), 0.3);
+                    } else if (shape.score > 0.6) {
+                        this.rightBrow?.pos.lerp(new THREE.Vector2(0, -48), 0.3);
+                    } else {
+                        this.rightBrow?.pos.set(0, 0);
+                        this.rightBrow?.setVisibility(false);
+                    } break;
                 default:
                     return;
             }
@@ -139,12 +182,73 @@ export class FaceDisplayCanvas extends THREE.CanvasTexture {
         this.ctx.reset();
         this.ctx.drawImage(this.bgImg, 0, 0, this.canvasElement.width, this.canvasElement.height);
 
+        this.mouth = this.setMouthShape(jawOpenScore, mouthPuckerScore);
+
         this.ctx.filter="drop-shadow(4px 4px 1px rgb(58, 66, 58)) brightness(75%)";
-        leftEye?.drawOnCanvas(this.canvasElement, this.ctx);
-        rightEye?.drawOnCanvas(this.canvasElement, this.ctx);
-        mouth?.drawOnCanvas(this.canvasElement, this.ctx);
-        glasses?.drawOnCanvas(this.canvasElement, this.ctx);
-        
+        this.leftEye?.drawOnCanvas(this.canvasElement, this.ctx);
+        this.rightEye?.drawOnCanvas(this.canvasElement, this.ctx);
+        this.mouth?.drawOnCanvas(this.canvasElement, this.ctx);
+        this.glasses?.drawOnCanvas(this.canvasElement, this.ctx);
+        this.leftBrow?.drawOnCanvas(this.canvasElement, this.ctx);
+        this.rightBrow?.drawOnCanvas(this.canvasElement, this.ctx);
+    }
+
+
+    // TODO: special faces override
+    onKeyDown(event) {
+        console.log(event);
+        var key = event.key;
+
+        if (key === "1") {
+
+        }
+    }
+
+    // TODO: pupil position offset calculation
+    setEyeOffset(lookIn: number, lookOut: number): THREE.Vector2 {
+
+        return new THREE.Vector2(0, 0);
+    }
+
+    setMouthShape(jawOpenScore: number, mouthPuckerScore: number): FacialFeature | undefined {
+        let x = 0;
+        let y = 0;
+
+        if (jawOpenScore < 0.15) {
+            y = 0;           
+        } else if (jawOpenScore < 0.55) {
+            y = 1;           
+        } else {
+            y = 2;           
+        }
+
+        if (mouthPuckerScore > 0.98) {
+            x = 0;
+        } else if (mouthPuckerScore > 0.15) {
+            x = 1;
+        } else {
+            x = 2;
+        }
+
+        if (x === 0 && y === 0) {
+            return this.facialFeatures.get('mouthx0y0');
+        } else if (x === 0 && y === 1) {
+            return this.facialFeatures.get('mouthx0y1');
+        } else if (x === 0 && y === 2) {
+            return this.facialFeatures.get('mouthx0y2');
+        } else if (x === 1 && y === 0) {
+            return this.facialFeatures.get('mouthx1y0');
+        } else if (x === 1 && y === 1) {
+            return this.facialFeatures.get('mouthx1y1');
+        } else if (x === 1 && y === 2) {
+            return this.facialFeatures.get('mouthx1y2');
+        } else if (x === 2 && y === 0) {
+            return this.facialFeatures.get('mouthx2y0');
+        } else if (x === 2 && y === 1) {
+            return this.facialFeatures.get('mouthx2y1');
+        } else if (x === 2 && y === 2) {
+            return this.facialFeatures.get('mouthx2y2');
+        }
     }
 
     // dvdBounceUpdatePosition() {
