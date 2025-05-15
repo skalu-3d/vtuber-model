@@ -2,17 +2,8 @@ import { FaceLandmarker, FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 import { predictWebcam } from './landmarking';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
-
-// @ts-ignore
-import vertexShader from './shaders/vertex.glsl'
-// @ts-ignore
-import fragmentShader from './shaders/fragment.glsl'
-
-// @ts-ignore
-// CRT Model by fizyman at Sketchfab: https://skfb.ly/o9BvF
-// CC 4.0 https://creativecommons.org/licenses/by/4.0/
-import modelUrl from './3d/scene.glb'
 import { FaceDisplayCanvas } from './faceDisplayCanvas';
+
 
 export class ShaderTuber {
   private audioContext: AudioContext;
@@ -27,7 +18,21 @@ export class ShaderTuber {
   }
 
   async loadModel() {
-    // https://fab.com/s/14e3b9546fc4
+    let modelUrl = "" 
+
+    // set to false to use fallback model 
+    if (true) {
+      // 3d model - Palm Pilot PDA by 3Dee on FAB
+      // used under a Personal license as of 15/05/2025
+      // https://fab.com/s/14e3b9546fc4
+      modelUrl = new URL('./3d/scene.glb', import.meta.url).href
+    } else {
+      // debug fallback model, license-free made by me.
+      // for some reason the image displays upside down and is scaled really tiny
+      // fix by modifying model scale and quaternion rotation in render function
+      modelUrl = new URL('./3d/pda_foss.glb', import.meta.url).href
+    }
+
     const loader = new GLTFLoader();
     const gltf = await loader.loadAsync(modelUrl, undefined);
     gltf.scene.traverse((child) => {
