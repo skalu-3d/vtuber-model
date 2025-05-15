@@ -53,14 +53,15 @@ export class ShaderTuber {
     // dvdCanvas.render();
     const material = screen.material;
     if (
-      material instanceof THREE.MeshBasicMaterial 
-      || material instanceof THREE.MeshStandardMaterial
+      material instanceof THREE.MeshStandardMaterial
     ) {
       displayCanvas.wrapS = THREE.RepeatWrapping
       displayCanvas.wrapT = THREE.RepeatWrapping
       
       material.side = THREE.DoubleSide;
       material.map = displayCanvas;
+      // material.emissive.set(THREE.Color.NAMES.darkgreen);
+      // material.emissiveMap = displayCanvas;
       this.onScreen = displayCanvas;
     }
   }

@@ -101,7 +101,7 @@ export class FaceDisplayCanvas extends THREE.CanvasTexture {
         if (this.facialFeatures.size == 0) return;
         
 
-        drawBlendShapes(landmarkerResults.faceBlendshapes);
+        // drawBlendShapes(landmarkerResults.faceBlendshapes);
         // let mouth = this.facialFeatures.get('mouthx1y0');
         let mouthShut = true;
         let jawOpenScore = 0;

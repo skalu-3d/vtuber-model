@@ -47,7 +47,8 @@ export async function renderScene(faceLandmarker: FaceLandmarker) {
     const bgTexture = textureLoader.load([
         px, nx, py, ny, pz, nz
     ]);
-    scene.background = bgTexture;
+    // scene.background = bgTexture;
+    renderer.setClearColor(THREE.Color.NAMES.darkblue);
 
     // init shadertuber
     const audioContext = new AudioContext();
