@@ -134,3 +134,4 @@ dist
 *.task
 components/wasm/*
 components/3d/scene.glb
+anonymize.sh
