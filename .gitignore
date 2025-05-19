@@ -134,4 +134,6 @@ dist
 *.task
 components/wasm/*
 components/3d/scene.glb
+components/3d/robot/robot-fixed.glb
+components/3d/wobot/wobot-fixed.glb
 anonymize.sh

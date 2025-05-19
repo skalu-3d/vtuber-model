@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader, OrbitControls, RoomEnvironment } from 'three/examples/jsm/Addons.js';
-import { BONES } from '../components/3d/wobot/bones';
-import { RenderPass } from 'three/examples/jsm/Addons.js';
-import { EffectComposer } from 'three/examples/jsm/Addons.js';
-import { UnrealBloomPass } from 'three/examples/jsm/Addons.js';
 
+// @ts-ignore
+import vertexShader from '../components/shaders/vertex.glsl'
+// @ts-ignore
+import fragmentShader from '../components/shaders/fragment.glsl'
 // @ts-ignore
 import px from '../components/textures/envmap/px.png'
 // @ts-ignore
@@ -17,7 +17,8 @@ import ny from '../components/textures/envmap/ny.png'
 import pz from '../components/textures/envmap/pz.png'
 // @ts-ignore
 import nz from '../components/textures/envmap/nz.png'
-
+// @ts-ignore
+import tvUrl from '../components/3d/scene.glb'
 
 export function renderScene() {
     // Visualization setup
@@ -38,12 +39,11 @@ export function renderScene() {
     renderer.outputEncoding = THREE.sRGBEncoding;
 
     // environment
-    const cubeTextureLoader = new THREE.CubeTextureLoader();
-    const bgTexture = cubeTextureLoader.load([
+    const textureLoader = new THREE.CubeTextureLoader();
+    const bgTexture = textureLoader.load([
         px, nx, py, ny, pz, nz
     ]);
-    // scene.background = bgTexture;
-    renderer.setClearColor(THREE.Color.NAMES.darkblue);
+    scene.background = bgTexture;
 
     const controls = new OrbitControls( camera, renderer.domElement );
     controls.enableDamping = true;
@@ -53,7 +53,7 @@ export function renderScene() {
     controls.update();
 
     // lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 10)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1)
     ambientLight.castShadow = true;
     scene.add(ambientLight)
 
@@ -63,40 +63,25 @@ export function renderScene() {
     scene.add(directionalLight);
 
     let model: THREE.Object3D;
-    let modelUrl = new URL('../components/3d/wobot/wobot-fixed.glb', import.meta.url).href;
-    let textureLoader = new THREE.TextureLoader();
-    let faceUrl = new URL('../components/textures/v1_face_proto.png', import.meta.url).href;
-    let faceTexture = textureLoader.load(faceUrl);
-    console.log(modelUrl);
 
-    console.log("loading model...");
     const loader = new GLTFLoader();
     loader.load(
-        modelUrl,
+        tvUrl,
         function (gltf) {
             console.log(gltf);
 
             gltf.scene.traverse((child) => {
-            //     if (child instanceof THREE.Mesh) {
-            //         child.castShadow = true;
-            //         child.receiveShadow = true;
-            //     }
-
-                if (child instanceof THREE.SkinnedMesh) {
-                    let material = child.material
-                    if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
-                        material.depthTest = true;
-                        material.depthWrite = true;
-
-                        if (child.name === BONES.emission) {
-                            material.emissiveMap = faceTexture;
-                            material.emissiveIntensity = 1;
-                        }
-                    }
+                if (child instanceof THREE.Mesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
                 }
 
-                if (child.name === "Bone004_05") {
+                if (child.name === "CRT_Monitor") {
                     model = child;
+                    model.scale.set(5,5,5);
+                    model.position.setX(0);
+                    model.position.setY(32);
+                    model.position.setZ(0);
                 }
             })
 
@@ -108,24 +93,38 @@ export function renderScene() {
         }
     );
 
-    const renderScene = new RenderPass(scene, camera);
-    const composer = new EffectComposer(renderer);
-    composer.addPass(renderScene);
+    // init obj
+    const geometry = new THREE.IcosahedronGeometry(2, 10);
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            time: { value: 0 },
+            waveSpeed: { value: 0.2 },
+            waveScale: { value: 0.5 },
+            distortionScale: { value: 1 },
+            envMap: { value: bgTexture },
+            opacity: { value: 1.0 },
+            reflectivity: { value: 0.1 },
+            refractiveIndex: { value: 1.0 },
+            baseColor: { value: [0.0, 1.0, 0.0] },
+            baseColorIntensity: { value: 1.0 }
+        },
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        transparent: true,
+        side: THREE.DoubleSide
+    });
+    material.transparent = true;
+    // material.wireframe = true;
+    const cube = new THREE.Mesh( geometry, material );
+    // scene.add(cube);
 
-    const bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight),
-        1.6,
-        0.1,
-        0.1
-    );
-    composer.addPass(bloomPass);
 
     const animate = () => {
         requestAnimationFrame(animate);
         controls.update();
-        // model.rotation.x = model.rotation.y += 0.01;
-        // renderer.render(scene, camera);
-        composer.render();
+        material.uniforms.time.value = performance.now() / 1000;
+        model.rotation.x = model.rotation.y += 0.01;
+        renderer.render(scene, camera);
     }
 
     animate();
